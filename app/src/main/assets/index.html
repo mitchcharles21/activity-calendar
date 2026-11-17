@@ -56,6 +56,11 @@ main{padding:0 max(4vw,12px) 104px}
 .hero h2{font:600 14px/1.2 Inter;color:var(--mute);margin:0 0 4px}
 .hero .hs{font:700 22px/1.15 Inter;letter-spacing:-.3px;margin:0 0 10px}
 .hero.met .hs{color:var(--accT)}
+.coach{margin:-4px 0 10px;font-size:14px;line-height:1.4;color:var(--mute)}
+.dcoach{margin:8px 0 0;font-size:15px;font-weight:500}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:30;display:flex;gap:10px;align-items:center;background:var(--g9);color:#fff;font-weight:600;font-size:15px;padding:12px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:calc(100% - 32px);animation:pop .35s cubic-bezier(.2,.9,.3,1.3);transition:opacity .4s}
+.toast.out{opacity:0}
+@keyframes pop{from{transform:translate(-50%,20px);opacity:0}}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px 5px 8px;font-size:13px;font-weight:600;background:var(--tile);white-space:nowrap}
 .chip .i svg{width:15px;height:15px}
@@ -248,6 +253,7 @@ ol.steps{padding-left:20px;margin:6px 0 12px;font-size:14px}
   <div class="card list">
     <button class="li" id="bGoals2"><span class="i ti" data-i="Target"></span><span><b>Daily goals</b><span>Steps, workout minutes, Active Zone Minutes</span></span><span class="chev" data-i="ChevronRight"></span></button>
     <button class="li" id="bImport"><span class="i tg" data-i="Upload"></span><span><b>Import Fitbit data</b><span>From a Google Takeout export or CSV</span></span><span class="chev" data-i="ChevronRight"></span></button>
+    <div class="li" style="cursor:default"><span class="i tt" data-i="Heart"></span><label style="flex:1"><b>Your name</b><span>So the app can cheer you on</span><input type="text" id="nm" autocomplete="given-name" maxlength="30" placeholder="First name" style="margin-top:6px"></label></div>
     <button class="li" id="bBackup"><span class="i ta" data-i="Archive"></span><span><b>Backup and restore</b><span>Copy your data or move it to another phone</span></span><span class="chev" data-i="ChevronRight"></span></button>
   </div>
   <div class="card" id="verLine" hidden>
@@ -320,7 +326,7 @@ let vy=now.getFullYear(),vm=now.getMonth(),sel=TODAY,editing=false;
 
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function load(){let t=null;try{t=localStorage.getItem(LS)}catch(e){}
-  if(t){try{const o=JSON.parse(t);if(o&&o.days){S.days=o.days;S.sample=!!o.sample;S.hc=!!o.hc;S.lastSync=o.lastSync||0;S.customEx=o.customEx||[];if(o.goals)S.goals=Object.assign(S.goals,o.goals)}}catch(e){seed()}}else seed()}
+  if(t){try{const o=JSON.parse(t);if(o&&o.days){S.days=o.days;S.name=o.name||'';S.cel=o.cel||'';S.sample=!!o.sample;S.hc=!!o.hc;S.lastSync=o.lastSync||0;S.customEx=o.customEx||[];if(o.goals)S.goals=Object.assign(S.goals,o.goals)}}catch(e){seed()}}else seed()}
 function seed(){let a=20261115;const r=()=>{a=(a*1664525+1013904223)%4294967296;return a/4294967296};
   const names=['Run','Walk','Weights','Bike','Yoga','Elliptical'];S.days={};
   for(let i=45;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const k=key(d.getFullYear(),d.getMonth(),d.getDate());
@@ -378,7 +384,40 @@ function render(){
     [streak()+'','day streak'],
     [stepDays?fk(stepSum/stepDays):'–','avg steps'],
     [wo+'','workouts']].map(([b,s],i)=>`<div>${ic(['CheckCircled','DoubleArrowUp','Steps','ActivityLog'][i])}<b class="num">${b}</b><span>${s}</span></div>`).join('');
-  renderHero();renderDay();renderTrends();renderBests()}
+  renderHero();renderDay();renderTrends();renderBests();celebrate()}
+
+/* ---------- coach: friendly messages built from your own numbers ---------- */
+const nm=()=>(S.name||'').trim();
+const pick=(arr,salt)=>{let h=0;const s=TODAY+salt;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return arr[h%arr.length]};
+const yKey=k=>{const d=toD(k);d.setDate(d.getDate()-1);return key(d.getFullYear(),d.getMonth(),d.getDate())};
+function greet(){const hr=new Date().getHours(),g=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';return esc(nm()?`${g}, ${nm()}`:g)}
+function bestSteps(except){let b=0;for(const[k,d]of Object.entries(S.days))if(k!==except&&k<=TODAY&&d.steps>b)b=d.steps;return b}
+function coachToday(o,st){const g=S.goals,s=o.steps||0,left=g.steps-s,pct=s/g.steps,n=nm(),sk=streak(),y=S.days[yKey(TODAY)]||{},best=bestSteps(TODAY),hr=new Date().getHours();
+  const you=n?`, ${n}`:'';
+  if(st==='met'){const a=pick([`That's a win${you}. Goal complete!`,`You did it${you}. Today's goal is done.`,`Goal met${you}. That's how it's done.`],'m');
+    if(best&&s>best)return a+' And that\'s a new personal best for steps!';
+    if(sk>=2)return a+` That's ${sk} days in a row. Keep the streak going tomorrow.`;
+    return a}
+  if(!has(o)||s===0)return status(yKey(TODAY))==='miss'?pick([`Yesterday's behind you${you}. Today's a fresh start.`,`New day, clean slate${you}. A short walk gets things moving.`],'f'):pick([`Let's get moving${you}. A 10-minute walk is about 1,000 steps.`,`Every step counts${you}. Start with a short walk.`],'z');
+  if(left<=0){const wl=g.use.wmin?Math.max(0,g.wmin-wm(o)):0,al=g.use.azm?Math.max(0,g.azm-(o.azm||0)):0;
+    if(wl)return `Steps are done${you}! A ${wl}-minute workout finishes the day.`;
+    if(al)return `Steps are done${you}! ${al} more Active Zone Minutes and today's a win.`;
+    return `Steps are done${you}. Nice work!`}
+  let m;
+  if(pct>=.75)m=`Almost there${you}! About ${Math.max(1,Math.round(left/100))} more minutes of walking does it.`;
+  else if(pct>=.4)m=pick([`You're ${Math.round(pct*100)}% of the way${you}. Keep it up.`,`Good progress${you}. Keep going.`],'h');
+  else m=hr>=17?`There's still time${you}. An evening walk adds up fast.`:pick([`Good start${you}. Keep stacking the steps.`,`You're on the board${you}. Keep it moving.`],'s');
+  if(best&&s>best*.9&&s<=best)return m+` You're ${fn(best-s+1)} steps from a new personal best!`;
+  if(y.steps&&s>y.steps)return m+` You've already beaten yesterday's ${fk(y.steps)}.`;
+  if(sk>=2)return m+` Your ${sk}-day streak is on the line.`;
+  return m}
+function coachDay(o,st){const n=nm(),you=n?`, ${n}`:'',s=o.steps||0;
+  if(st==='met')return s&&s>=bestSteps('')?`Your best step day so far${you}!`:pick([`Great day${you}. You met your goal.`,`Goal met${you}. Nicely done.`],'d'+s);
+  if(st==='miss'){const p=Math.round(s/S.goals.steps*100);return p>=80?`So close${you}: ${p}% of your step goal.`:`Not every day is a win${you}. You still got ${fk(s)} steps in.`}
+  return ''}
+function celebrate(){if(status(TODAY)!=='met'||S.cel===TODAY||S.sample)return;S.cel=TODAY;save();
+  const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.innerHTML=`${ic('CheckCircled')}<span>${nm()?`Way to go, ${esc(nm())}!`:'Way to go!'} Today's goal is complete.</span>`;
+  document.body.appendChild(t);setTimeout(()=>t.classList.add('out'),3800);setTimeout(()=>t.remove(),4300)}
 
 function renderHero(){const o=S.days[TODAY]||{},g=S.goals,st=status(TODAY),s=o.steps||0,p=Math.min(100,s/g.steps*100);
   const left=Math.max(0,g.steps-s);
@@ -391,7 +430,7 @@ function renderHero(){const o=S.days[TODAY]||{},g=S.goals,st=status(TODAY),s=o.s
   const sk=streak();if(sk)ch.push([false,'DoubleArrowUp',`${sk}-day streak`]);
   const h=$('#hero');h.className='card hero'+(st==='met'?' met':'');
   h.innerHTML=`<div class="big"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="t" cx="60" cy="60" r="52"/><circle class="p" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="${p} 100"/></svg><div class="c"><b class="num">${fn(s)}</b><small>of ${fk(g.steps)} steps</small></div></div>
-    <div><h2>Today</h2><p class="hs">${head}</p><div class="chips">${ch.map(([ok,i,t])=>`<span class="chip${ok?' ok':''}">${ic(ok?'CheckCircled':i)}${t}</span>`).join('')}</div></div>`}
+    <div><h2>${greet()}</h2><p class="hs">${head}</p><p class="coach">${esc(coachToday(o,st))}</p><div class="chips">${ch.map(([ok,i,t])=>`<span class="chip${ok?' ok':''}">${ic(ok?'CheckCircled':i)}${t}</span>`).join('')}</div></div>`}
 
 function renderDay(){
   const [y,m,d]=sel.split('-').map(Number);const dt=new Date(y,m-1,d);
@@ -399,7 +438,9 @@ function renderDay(){
   const title=dt.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
   const pill={met:'Goal met',miss:'Goal missed',prog:'In progress',nodata:'No data',future:'Upcoming'}[st];
   if(editing){renderEdit(title,o);return}
+  const cl=sel===TODAY?'':coachDay(o,st);
   let h=`<div class="dh"><h2>${title}</h2><span class="pill ${st}">${ic({met:'CheckCircled',miss:'CrossCircled',prog:'Timer'}[st]||'InfoCircled')}${pill}</span><button class="btn" id="edit">${ic(has(o)||o.note?'Pencil1':'Plus')}${has(o)||o.note?'Edit':'Add data'}</button></div>`;
+  if(cl)h+=`<p class="dcoach">${esc(cl)}</p>`;
   if(has(o)){
     h+=`<div class="goals${st==='prog'?' live':''}">`+checks(o).map(c=>`<div class="g${c.v>=c.t?' ok':''}"><span>${c.n}</span><div class="meter"><i style="width:${Math.min(100,c.t?c.v/c.t*100:100)}%"></i></div><span class="v num">${fn(c.v)} / ${fn(c.t)}${c.u}</span></div>`).join('')+'</div>';
     const M=[['Steps',o.steps,v=>fn(v),''],['Distance',o.dist,v=>v.toFixed(2),'km'],['Calories',o.cal,v=>fn(v),'kcal'],['Active Zone Min',o.azm,v=>fn(v),'min'],['Resting heart rate',o.rhr,v=>fn(v),'bpm'],['Sleep',o.sleep,v=>hm(v),''],['Floors',o.floors,v=>fn(v),'']];
@@ -556,7 +597,7 @@ async function importFiles(list){acc={};wos=[];stats={files:0,skip:0,bad:0,resto
   msg.textContent=`Imported ${ks.length} days and ${wn} workouts from ${stats.files} file${stats.files===1?'':'s'}.`+(stats.skip?` Skipped ${stats.skip} file${stats.skip===1?'':'s'} with nothing to use.`:'');
   render()}
 
-function restore(o){S.days=o.days||{};if(o.customEx)S.customEx=o.customEx;if(o.goals)S.goals=Object.assign(S.goals,o.goals);S.sample=false;save()}
+function restore(o){if(o.name)S.name=o.name;S.days=o.days||{};if(o.customEx)S.customEx=o.customEx;if(o.goals)S.goals=Object.assign(S.goals,o.goals);S.sample=false;save()}
 
 /* ---------- wiring ---------- */
 const open=id=>{$(id).hidden=false;const f=$(id).querySelector('input,select,button');f&&f.focus()};
@@ -574,6 +615,7 @@ const openImp=()=>{$('#iMsg').textContent='';$('#wipe').textContent='Delete all 
 $('#bImport').onclick=openImp;$('#bImport2').onclick=openImp;
 $('#bBackup').onclick=()=>{openImp();setTimeout(()=>$('#bkH').scrollIntoView({block:'start'}),50)};
 $('#bGoals2').onclick=()=>$('#bGoals').click();
+$('#nm').value=S.name||'';$('#nm').onchange=()=>{S.name=$('#nm').value.trim();save();render()};
 $('#hero').onclick=()=>{vy=now.getFullYear();vm=now.getMonth();sel=TODAY;editing=false;render();$('#day').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
 let curTab='Cal';
 function tab(t){curTab=t;document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!=='v'+t);
@@ -586,7 +628,7 @@ const dz=$('#drop');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('on')});
 dz.addEventListener('dragleave',()=>dz.classList.remove('on'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('on');if(e.dataTransfer.files.length)importFiles([...e.dataTransfer.files])});
-$('#copyB').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify({app:'actcal',v:1,goals:S.goals,days:S.days,customEx:S.customEx||[]}));$('#iMsg').textContent='Backup copied. Paste it somewhere safe, like a note or an email to yourself.'}catch(e){$('#paste').value=JSON.stringify({app:'actcal',v:1,goals:S.goals,days:S.days,customEx:S.customEx||[]});$('#iMsg').textContent="Couldn't copy automatically. The backup is in the box above; select it and copy."}};
+$('#copyB').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify({app:'actcal',v:1,goals:S.goals,days:S.days,customEx:S.customEx||[],name:S.name||""}));$('#iMsg').textContent='Backup copied. Paste it somewhere safe, like a note or an email to yourself.'}catch(e){$('#paste').value=JSON.stringify({app:'actcal',v:1,goals:S.goals,days:S.days,customEx:S.customEx||[],name:S.name||""});$('#iMsg').textContent="Couldn't copy automatically. The backup is in the box above; select it and copy."}};
 $('#restB').onclick=()=>{try{const o=JSON.parse($('#paste').value);if(o.app!=='actcal')throw 0;restore(o);$('#iMsg').textContent='Backup restored.';render()}catch(e){$('#iMsg').textContent="That doesn't look like a backup from this page."}};
 $('#wipe').onclick=e=>{const b=e.target;if(b.textContent!=='Tap again to delete'){b.textContent='Tap again to delete';return}S.days={};S.sample=false;save();b.textContent='Delete all data';$('#iMsg').textContent='All data deleted.';render()};
 
