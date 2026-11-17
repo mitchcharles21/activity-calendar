@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Activity Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* VOICE: a personal training log — upbeat, plain, quick to read on a phone.
+   IDEA: a printed wall calendar where each finished day is marked green or red, like ticking off a training plan.
+   PICTURE: the month grid itself, every day a progress ring with its step count; met days go green, missed days red.
+   COLOUR and TYPE: charcoal band up top, white page, green = goal met, red = missed, blue = workouts and today; Barlow Condensed numbers, Barlow text.
+   LAYOUT: charcoal band (month + score) > calendar > selected-day detail; sheets for goals and import. */
+:root{color-scheme:light dark;--bg:light-dark(#fff,#111316);--ink:light-dark(#15171a,#eef0f2);--mute:light-dark(#6b717a,#9aa1ab);--line:light-dark(#e6e8eb,#272b31);--acc:light-dark(#15a046,#2fc463);--bad:light-dark(#d92d2d,#f05a5a);--accInk:#fff;--met:light-dark(#e3f6e9,#15301f);--miss:light-dark(#fde9e9,#3a1b1b);--wo:light-dark(#2a5bd7,#7fa4ff);--card:light-dark(#f6f7f8,#1a1d21);--trk:light-dark(#eceef1,#2a2e35)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--wo);outline-offset:2px}
+.num{font-family:"Barlow Condensed",Barlow,sans-serif;font-weight:700;font-variant-numeric:tabular-nums}
+.top{background:#1f2328;color:var(--accInk);padding:20px max(4vw,16px) 22px}
+.wrap{max-width:920px;margin:0 auto}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bar h1{font:700 clamp(30px,6vw,44px)/1.05 "Barlow Condensed",sans-serif;margin:0 auto 0 0;white-space:nowrap}
+.ib{min-height:44px;min-width:44px;border:0;border-radius:22px;background:rgba(255,255,255,.18);color:#fff;padding:0 16px;font-weight:600}
+.ib:hover{background:rgba(255,255,255,.3)}
+.nav{display:flex;align-items:center;gap:4px;margin-top:14px}
+.nav .ib{padding:0;font-size:22px}
+.nav .m{font:600 20px/1 Barlow;min-width:150px;text-align:center}
+.score{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.score div{border-top:1px solid rgba(255,255,255,.4);padding-top:8px}
+.score b{display:block;font-size:clamp(26px,5vw,36px);line-height:1}
+.score span{font-size:14px;opacity:.92}
+.banner{background:var(--card);border-bottom:1px solid var(--line);padding:10px max(4vw,16px);font-size:15px}
+.banner .wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lk{border:0;background:none;color:var(--wo);font-weight:600;min-height:44px;padding:0 6px;text-decoration:underline}
+main{padding:16px max(4vw,12px) 48px}
+.wd,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wd div{text-align:center;font-size:13px;color:var(--mute);font-weight:600;padding:4px 0}
+.cell{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--bg);aspect-ratio:.78;padding:4px 2px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px}
+.cell .dn{align-self:flex-start;font-size:13px;font-weight:600;padding-left:4px;line-height:1.2}
+.cell svg{width:min(70%,48px);aspect-ratio:1;margin-top:auto}
+.cell .st{font-size:13px;line-height:1.1;margin-bottom:auto;white-space:nowrap}
+.trk{fill:none;stroke:var(--trk);stroke-width:4}
+.prg{fill:none;stroke:var(--mute);stroke-width:4;stroke-linecap:round;transition:stroke-dasharray .5s}
+.cell.met{background:var(--met);border-color:transparent}
+.cell.met .prg{stroke:var(--acc)}
+.cell.met .chk{fill:var(--acc)}
+.cell.miss{background:var(--miss);border-color:transparent}
+.cell.miss .prg{stroke:var(--bad)}
+.cell.prog .prg{stroke:var(--wo)}
+.cell.nodata .st,.cell.future .st{color:var(--mute)}
+.cell.future{opacity:.45}
+.cell.blank{border:0;background:none}
+.cell.today .dn{background:var(--ink);color:var(--bg);border-radius:9px;padding:0 6px}
+.cell.sel{outline:2.5px solid var(--ink);outline-offset:-1px}
+.wo{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--wo)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--mute);margin:12px 2px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:6px}
+.day{margin-top:24px;border-top:2px solid var(--ink);padding-top:16px}
+.dh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dh h2{font:700 clamp(26px,5vw,34px)/1.05 "Barlow Condensed",sans-serif;margin:0 auto 0 0}
+.pill{border-radius:20px;padding:4px 12px;font-size:14px;font-weight:600;background:var(--card)}
+.pill.met{background:var(--acc);color:#fff}.pill.miss{background:var(--bad);color:#fff}.pill.prog{background:var(--wo);color:#fff}
+.goals{display:grid;gap:10px;margin:16px 0}
+.g{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:12px;align-items:center;font-size:15px}
+.g .meter{height:12px;border-radius:6px;background:var(--trk);overflow:hidden}
+.g .meter i{display:block;height:100%;background:var(--bad);border-radius:6px}
+.goals.live .g .meter i{background:var(--wo)}
+.g.ok .meter i{background:var(--acc)}
+.g .v{white-space:nowrap;text-align:right}
+.mets{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.mt{background:var(--card);border-radius:12px;padding:10px 12px}
+.mt span{font-size:13px;color:var(--mute);display:block}
+.mt b{font-size:26px;line-height:1.1}
+.mt small{font-size:14px;color:var(--mute);margin-left:3px;font-family:Barlow}
+h3{font-size:17px;margin:20px 0 8px}
+.wl{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.wl li{display:flex;gap:10px;align-items:center;border-left:4px solid var(--wo);background:var(--card);border-radius:0 10px 10px 0;padding:8px 12px;flex-wrap:wrap}
+.wl li b{margin-right:auto}
+.wl li span{font-size:14px;color:var(--mute);white-space:nowrap}
+.empty{color:var(--mute);font-size:15px}
+.btn{min-height:44px;border-radius:22px;border:1.5px solid var(--ink);background:none;padding:0 18px;font-weight:600}
+.btn.pri{background:var(--ink);color:var(--bg)}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:10;padding:0}
+.ov[hidden]{display:none}
+.sheet{background:var(--bg);width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px 28px}
+@media(min-width:640px){.ov{align-items:center}.sheet{border-radius:20px}}
+.sheet h2{font:700 28px/1.1 "Barlow Condensed",sans-serif;margin:0 0 6px}
+.sheet p{margin:6px 0 12px;color:var(--mute);font-size:15px}
+label.f{display:grid;gap:4px;font-size:14px;font-weight:600}
+input[type=number],input[type=text],select,textarea{font-size:16px;min-height:44px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);width:100%}
+textarea{min-height:90px;font-size:14px}
+.fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ck{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px}
+.ck input{width:22px;height:22px;accent-color:var(--acc)}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;margin:10px 0}
+.drop.on{border-color:var(--wo)}
+.src{font-size:14px;color:var(--mute);margin:6px 0 0}
+.sync{font-size:14px;opacity:.85;margin-top:8px;min-height:21px}
+.msg{font-size:15px;margin-top:10px;font-weight:600}
+.xedit{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 44px;gap:6px;align-items:center;margin-bottom:6px}
+.xedit .oth{grid-column:1/-1}
+.xh{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 44px;gap:6px;font-size:13px;color:var(--mute);font-weight:600;margin-bottom:4px}
+.xl li{border-left-color:var(--acc)}
+.wedit{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 44px;gap:6px;align-items:center;margin-bottom:6px}
+.x{border:0;background:var(--card);border-radius:10px;min-height:44px;font-size:18px}
+ol.steps{padding-left:20px;margin:6px 0 12px;font-size:15px}
+@media(max-width:600px){.score{grid-template-columns:repeat(2,minmax(0,1fr))}.g{grid-template-columns:110px minmax(0,1fr) auto;font-size:14px}.cell{border-radius:9px}.wo{top:4px;right:4px;width:7px;height:7px}}
+@media(max-width:380px){.cell .st{font-size:13px;letter-spacing:-.3px}.wd,.grid{gap:3px}}
+.sec{margin-top:32px;border-top:2px solid var(--ink);padding-top:16px}
+.sec h2{font:700 clamp(26px,5vw,34px)/1.05 "Barlow Condensed",sans-serif;margin:0}
+.sub{color:var(--mute);margin:4px 0 12px;font-size:15px}
+.cmp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.cmp div{background:var(--card);border-radius:12px;padding:10px 12px}
+.cmp span{display:block;font-size:13px;color:var(--mute)}
+.cmp b{font-size:26px;line-height:1.1;display:block}
+.cmp em{display:block;font-style:normal;font-size:14px;color:var(--mute);white-space:nowrap}
+.cmp em.up{color:var(--acc)}.cmp em.down{color:var(--bad)}
+.fig{position:relative;height:220px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.cap{font-size:14px;color:var(--mute);margin-top:6px}
+.pbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:12px}
+.pb{text-align:left;border:0;background:var(--card);border-radius:12px;padding:12px;min-height:44px}
+.pb span{display:block;font-size:13px;color:var(--mute)}.pb b{font-size:30px;line-height:1.1;display:block}.pb small{font-size:14px;color:var(--mute)}
+.pb:disabled{cursor:default}
+.note{background:var(--card);border-left:4px solid var(--ink);border-radius:0 12px 12px 0;padding:10px 14px;margin-top:14px;font-size:15px;white-space:pre-wrap}
+.nt{position:absolute;bottom:5px;right:5px;width:9px;height:3px;border-radius:2px;background:var(--ink);opacity:.75}
+@media(max-width:600px){.cmp{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.prg{transition:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="bar">
+    <h1>Activity calendar</h1>
+    <button class="ib" id="bGoals">Goals</button>
+    <button class="ib" id="bSync" hidden>Sync</button>
+    <button class="ib" id="bImport">Import</button>
+  </div>
+  <div class="nav">
+    <button class="ib" id="prev" aria-label="Previous month">‹</button>
+    <div class="m" id="mLabel"></div>
+    <button class="ib" id="next" aria-label="Next month">›</button>
+    <button class="ib" id="tToday" style="margin-left:auto">Today</button>
+  </div>
+  <div class="sync" id="syncSt"></div>
+  <div class="score" id="score"></div>
+</div></header>
+<div class="banner" id="hcBar" hidden><div class="wrap">
+  <span id="hcTxt"></span>
+  <button class="lk" id="hcBtn"></button>
+</div></div>
+<div class="banner" id="updBar" hidden><div class="wrap">
+  <span id="updTxt"></span>
+  <button class="lk" id="updBtn">Update</button>
+</div></div>
+<div class="banner" id="sampleBar" hidden><div class="wrap">
+  <span>You're looking at sample data. Import your Fitbit export to see your own.</span>
+  <button class="lk" id="bImport2">Import now</button>
+  <button class="lk" id="clrSample">Clear sample</button>
+</div></div>
+<main><div class="wrap">
+  <div class="wd"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+  <div class="grid" id="grid"></div>
+  <div class="legend">
+    <span><i style="background:var(--acc)"></i>Goal met</span>
+    <span><i style="background:var(--bad)"></i>Goal missed</span>
+    <span><i style="background:var(--wo)"></i>Today, still in progress</span>
+    <span><i style="background:var(--wo);border-radius:50%"></i>Workout logged</span>
+    <span><i style="background:var(--ink);height:4px;vertical-align:3px"></i>Note added</span>
+    <span>Ring = steps vs goal</span>
+  </div>
+  <section class="day" id="day"></section>
+  <section class="sec" id="trends">
+    <h2>Trends</h2>
+    <p class="sub" id="trSub"></p>
+    <div class="cmp" id="cmp"></div>
+    <div class="fig"><svg id="chart" role="img" aria-label="Daily steps for the month"></svg></div>
+    <p class="cap" id="cap"></p>
+  </section>
+  <section class="sec">
+    <h2>Personal bests</h2>
+    <div class="pbs" id="pbs"></div>
+  </section>
+</div></main>
+
+<div class="ov" id="ovGoals" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gT">
+  <h2 id="gT">Daily goals</h2>
+  <p>Pick which goals count toward a successful day.</p>
+  <label class="ck"><input type="checkbox" id="uSteps"> Steps</label>
+  <label class="f">Steps per day<input type="number" id="gSteps" min="0" step="500"></label>
+  <label class="ck"><input type="checkbox" id="uWmin"> Workout minutes</label>
+  <label class="f">Workout minutes per day<input type="number" id="gWmin" min="0" step="5"></label>
+  <label class="ck"><input type="checkbox" id="uAzm"> Active Zone Minutes</label>
+  <label class="f">Active Zone Minutes per day<input type="number" id="gAzm" min="0" step="1"></label>
+  <label class="f" style="margin-top:12px">A day counts as met when
+    <select id="gMode"><option value="all">all checked goals are met</option><option value="any">any checked goal is met</option></select></label>
+  <div class="row"><button class="btn pri" id="gSave">Save goals</button><button class="btn" data-close>Cancel</button></div>
+  <div id="verLine" hidden style="margin-top:20px;border-top:1px solid var(--line);padding-top:12px">
+    <span id="verTxt"></span> <button class="lk" id="chkUpd">Check for updates</button>
+    <div class="msg" id="verMsg" aria-live="polite"></div>
+  </div>
+</div></div>
+
+<div class="ov" id="ovImport" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="iT">
+  <h2 id="iT">Import Fitbit data</h2>
+  <p>A web page can't sign in to Google Health directly, so bring your data in from an export.</p>
+  <ol class="steps">
+    <li>Request your Fitbit data from Google Takeout (takeout.google.com, choose Fitbit).</li>
+    <li>Pick the zip here, or unzip it and pick the files you want: steps, distance, calories, exercise, sleep, resting heart rate, Active Zone Minutes.</li>
+    <li>Any CSV with a date column plus steps, distance, calories, sleep or workouts also works.</li>
+  </ol>
+  <div class="drop" id="drop">
+    <input type="file" id="file" multiple accept=".json,.csv,.zip" style="max-width:100%">
+    <div style="font-size:14px;color:var(--mute);margin-top:6px">or drop files here</div>
+  </div>
+  <div class="msg" id="iMsg" aria-live="polite"></div>
+  <h3>Backup and restore</h3>
+  <p>Your data stays in this browser only. Copy a backup now and then; paste one below to restore it on another device.</p>
+  <textarea id="paste" placeholder="Paste a backup here"></textarea>
+  <div class="row">
+    <button class="btn pri" id="copyB">Copy backup</button>
+    <button class="btn" id="restB">Restore pasted backup</button>
+    <button class="btn" id="wipe">Delete all data</button>
+    <button class="btn" data-close>Close</button>
+  </div>
+</div></div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const LS='actcal.v1';
+const pad=n=>String(n).padStart(2,'0');
+const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const now=new Date();
+const TODAY=key(now.getFullYear(),now.getMonth(),now.getDate());
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const FIELDS=['steps','dist','cal','azm','rhr','sleep','floors'];
+let S={days:{},goals:{steps:10000,wmin:30,azm:22,use:{steps:true,wmin:true,azm:false},mode:'all'},sample:false};
+let vy=now.getFullYear(),vm=now.getMonth(),sel=TODAY,editing=false;
+
+function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+function load(){let t=null;try{t=localStorage.getItem(LS)}catch(e){}
+  if(t){try{const o=JSON.parse(t);if(o&&o.days){S.days=o.days;S.sample=!!o.sample;S.hc=!!o.hc;S.lastSync=o.lastSync||0;S.customEx=o.customEx||[];if(o.goals)S.goals=Object.assign(S.goals,o.goals)}}catch(e){seed()}}else seed()}
+function seed(){let a=20261115;const r=()=>{a=(a*1664525+1013904223)%4294967296;return a/4294967296};
+  const names=['Run','Walk','Weights','Bike','Yoga','Elliptical'];S.days={};
+  for(let i=45;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const k=key(d.getFullYear(),d.getMonth(),d.getDate());
+    let steps=Math.round(4200+r()*11000);if(i===0)steps=Math.round(steps*.45);
+    const o={steps,dist:+(steps*.00076).toFixed(2),cal:Math.round(1850+steps*.045),azm:Math.round(r()*45),rhr:Math.round(57+r()*7),sleep:Math.round(370+r()*110),floors:Math.round(r()*14),workouts:[]};
+    if(r()<.58&&i!==0){const n=names[Math.floor(r()*names.length)];const min=Math.round(18+r()*45);o.workouts.push({name:n,min,cal:Math.round(min*(6+r()*5)),hr:Math.round(112+r()*35)});if(n==='Weights')o.ex=[{n:'Squat',s:3,r:10},{n:'Bench press',s:3,r:8},{n:'Push-up',s:2,r:15}];o.azm+=Math.round(min*.6)}
+    if(i===3)o.note='Rest day, legs sore from Saturday';if(i===12)o.note='Travelling for work';
+    S.days[k]=o}
+  S.sample=true}
+
+const wm=d=>(d.workouts||[]).reduce((s,w)=>s+(+w.min||0),0);
+const EXG=[['Legs',['Squat','Lunge','Deadlift','Romanian deadlift','Leg press','Calf raise','Glute bridge']],
+  ['Chest',['Bench press','Incline bench press','Push-up','Dumbbell fly']],
+  ['Back',['Pull-up','Chin-up','Bent-over row','Lat pulldown','Seated row']],
+  ['Shoulders',['Overhead press','Lateral raise','Shrug']],
+  ['Arms',['Bicep curl','Hammer curl','Tricep dip','Tricep extension']],
+  ['Core',['Sit-up','Crunch','Plank (seconds)','Russian twist','Leg raise']],
+  ['Full body',['Burpee','Jumping jack','Mountain climber','Kettlebell swing','Box jump']]];
+const EXALL=EXG.flatMap(g=>g[1]);
+const has=d=>d&&(FIELDS.some(f=>d[f]!=null)||(d.workouts&&d.workouts.length)||(d.ex&&d.ex.length));
+function checks(d){const g=S.goals,c=[];
+  if(g.use.steps)c.push({n:'Steps',v:d.steps||0,t:g.steps,u:''});
+  if(g.use.wmin)c.push({n:'Workout minutes',v:wm(d),t:g.wmin,u:' min'});
+  if(g.use.azm)c.push({n:'Active Zone Min',v:d.azm||0,t:g.azm,u:' min'});
+  if(!c.length)c.push({n:'Steps',v:d.steps||0,t:g.steps,u:''});
+  return c}
+function status(k){if(k>TODAY)return'future';const d=S.days[k];if(!has(d))return'nodata';
+  const c=checks(d).map(x=>x.v>=x.t);const ok=S.goals.mode==='any'?c.some(Boolean):c.every(Boolean);
+  return ok?'met':(k===TODAY?'prog':'miss')}
+const fk=n=>n>=10000?Math.round(n/1000)+'k':n>=1000?(n/1000).toFixed(1)+'k':String(Math.round(n));
+const fn=n=>Math.round(n).toLocaleString();
+const hm=m=>`${Math.floor(m/60)}h ${pad(Math.round(m%60))}m`;
+
+function streak(){let d=new Date(now),c=0;if(status(TODAY)!=='met')d.setDate(d.getDate()-1);
+  for(;;){const k=key(d.getFullYear(),d.getMonth(),d.getDate());if(status(k)!=='met')break;c++;d.setDate(d.getDate()-1)}return c}
+
+function render(){
+  $('#mLabel').textContent=`${MON[vm]} ${vy}`;
+  $('#sampleBar').hidden=!S.sample;
+  const first=new Date(vy,vm,1).getDay(),n=new Date(vy,vm+1,0).getDate();
+  let h='';for(let i=0;i<first;i++)h+='<div class="cell blank"></div>';
+  let met=0,cnt=0,stepSum=0,stepDays=0,wo=0;
+  for(let d=1;d<=n;d++){const k=key(vy,vm,d),st=status(k),o=S.days[k]||{};
+    if(st==='met'||st==='miss'){cnt++;if(st==='met')met++}
+    if(o.steps!=null&&k<=TODAY){stepSum+=o.steps;stepDays++}
+    wo+=(o.workouts||[]).length;
+    const p=Math.min(100,Math.round((o.steps||0)/S.goals.steps*100));
+    const ring=`<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="15"/>${has(o)?`<circle class="prg" cx="18" cy="18" r="15" pathLength="100" stroke-dasharray="${st==='met'?100:p} 100" transform="rotate(-90 18 18)"/>`:''}${st==='met'?'<path class="chk" d="M12.5 18.5l3.6 3.6 7.4-7.6" fill="none" stroke="var(--acc)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>':''}</svg>`;
+    const lab={met:'goal met',miss:'goal missed',prog:'in progress',nodata:'no data',future:''}[st];
+    h+=`<button class="cell ${st}${k===TODAY?' today':''}${k===sel?' sel':''}" data-k="${k}" aria-label="${MON[vm]} ${d}, ${lab}${o.steps!=null?', '+fn(o.steps)+' steps':''}">
+      <span class="dn">${d}</span>${ring}<span class="st num">${o.steps!=null?fk(o.steps):(st==='future'?'':'–')}</span>${(o.workouts||[]).length||(o.ex||[]).length?'<span class="wo"></span>':''}${o.note?'<span class="nt"></span>':''}</button>`}
+  $('#grid').innerHTML=h;
+  $('#score').innerHTML=[
+    [cnt?`${met}/${cnt}`:'–','days goal met'],
+    [streak()+'','day streak'],
+    [stepDays?fk(stepSum/stepDays):'–','avg steps'],
+    [wo+'','workouts']].map(([b,s])=>`<div><b class="num">${b}</b><span>${s}</span></div>`).join('');
+  renderDay();renderTrends();renderBests()}
+
+function renderDay(){
+  const [y,m,d]=sel.split('-').map(Number);const dt=new Date(y,m-1,d);
+  const o=S.days[sel]||{},st=status(sel);
+  const title=dt.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
+  const pill={met:'Goal met',miss:'Goal missed',prog:'In progress',nodata:'No data',future:'Upcoming'}[st];
+  if(editing){renderEdit(title,o);return}
+  let h=`<div class="dh"><h2>${title}</h2><span class="pill ${st}">${pill}</span><button class="btn" id="edit">${has(o)||o.note?'Edit':'Add data'}</button></div>`;
+  if(has(o)){
+    h+=`<div class="goals${st==='prog'?' live':''}">`+checks(o).map(c=>`<div class="g${c.v>=c.t?' ok':''}"><span>${c.n}</span><div class="meter"><i style="width:${Math.min(100,c.t?c.v/c.t*100:100)}%"></i></div><span class="v num">${fn(c.v)} / ${fn(c.t)}${c.u}</span></div>`).join('')+'</div>';
+    const M=[['Steps',o.steps,v=>fn(v),''],['Distance',o.dist,v=>v.toFixed(2),'km'],['Calories',o.cal,v=>fn(v),'kcal'],['Active Zone Min',o.azm,v=>fn(v),'min'],['Resting heart rate',o.rhr,v=>fn(v),'bpm'],['Sleep',o.sleep,v=>hm(v),''],['Floors',o.floors,v=>fn(v),'']];
+    h+='<div class="mets">'+M.filter(x=>x[1]!=null).map(([l,v,f,u])=>`<div class="mt"><span>${l}</span><b class="num">${f(v)}</b>${u?`<small>${u}</small>`:''}</div>`).join('')+'</div>';
+    const xs=o.ex||[];
+    if((o.workouts||[]).length||!xs.length){h+='<h3>Workouts</h3>';
+    h+=(o.workouts||[]).length?'<ul class="wl">'+o.workouts.map(w=>`<li><b>${esc(w.name)}</b><span>${fn(w.min)} min</span>${w.cal?`<span>${fn(w.cal)} kcal</span>`:''}${w.hr?`<span>${fn(w.hr)} bpm avg</span>`:''}${w.dist?`<span>${(+w.dist).toFixed(2)} km</span>`:''}</li>`).join('')+'</ul>':'<p class="empty">No workouts logged this day.</p>';}
+    if(xs.length){const tot=xs.reduce((a,x)=>a+(x.s||1)*(x.r||0),0);h+=`<h3>Exercises</h3><ul class="wl xl">`+xs.map(x=>`<li><b>${esc(x.n)}</b><span>${x.s?fn(x.s)+(x.s===1?' set':' sets'):''}${x.s&&x.r?' × ':''}${x.r?fn(x.r)+(/seconds/i.test(x.n)?' sec':' reps'):''}</span></li>`).join('')+`</ul><p class="src">${xs.length} exercise${xs.length===1?'':'s'}, ${fn(tot)} total reps</p>`}
+  }else h+=`<p class="empty">${st==='future'?'This day hasn\'t happened yet.':'Nothing recorded for this day. Import your Fitbit export or add it by hand.'}</p>`;
+  if(o.note)h+=`<div class="note">${esc(o.note)}</div>`;
+  if(o.auto)h+=`<p class="src">${o.man&&o.man.length||o.hide&&o.hide.length?'Synced from Health Connect, with your changes kept':'Synced from Health Connect'}</p>`;
+  $('#day').innerHTML=h;
+  $('#edit').onclick=()=>{editing=true;renderDay()}}
+
+function renderEdit(title,o){
+  const F=[['steps','Steps',1],['dist','Distance (km)',.01],['cal','Calories',1],['azm','Active Zone Minutes',1],['rhr','Resting heart rate',1],['sleep','Sleep (minutes)',1],['floors','Floors',1]];
+  let h=`<div class="dh"><h2>${title}</h2></div>`+(o.auto?'<p class="src">Anything you change here is kept, even when the phone syncs again.</p>':'')+`<div class="fg" style="margin-top:14px">`+F.map(([f,l,s])=>`<label class="f">${l}<input type="number" step="${s}" min="0" id="e_${f}" value="${o[f]??''}"></label>`).join('')+'</div><h3>Workouts</h3><div id="wrows"></div><button class="btn" id="addW">Add workout</button><h3>Exercises</h3><div class="xh"><span>Exercise</span><span>Sets</span><span>Reps</span></div><div id="xrows"></div><button class="btn" id="addX">Add exercise</button><h3>Note</h3><textarea id="e_note" placeholder="How did the day go?">'+esc(o.note||'')+'</textarea><div class="row"><button class="btn pri" id="sv">Save day</button><button class="btn" id="cn">Cancel</button>'+(o.auto?'<button class="btn" id="rs">Use synced data</button>':'')+'</div>';
+  $('#day').innerHTML=h;
+  const addRow=w=>{const r=document.createElement('div');r.className='wedit';r.innerHTML=`<input type="text" placeholder="Activity" aria-label="Activity" value="${esc(w.name||'')}"><input type="number" min="0" placeholder="Min" aria-label="Minutes" value="${w.min??''}"><input type="number" min="0" placeholder="kcal" aria-label="Calories" value="${w.cal??''}"><button class="x" aria-label="Remove workout">×</button>`;r.querySelector('.x').onclick=()=>r.remove();r.dataset.extra=JSON.stringify({hr:w.hr,dist:w.dist,start:w.start,hc:w.hc,o:[w.name||'',w.min??0,w.cal??null]});$('#wrows').appendChild(r)};
+  (o.workouts||[]).forEach(addRow);
+  $('#addW').onclick=()=>addRow({});
+  const opts=sel0=>{const cust=(S.customEx||[]).filter(n=>!EXALL.includes(n));let known=EXALL.includes(sel0)||cust.includes(sel0);
+    return '<option value="">Choose…</option>'+(cust.length?`<optgroup label="Your exercises">${cust.map(n=>`<option${n===sel0?' selected':''}>${esc(n)}</option>`).join('')}</optgroup>`:'')+EXG.map(([g,l])=>`<optgroup label="${g}">${l.map(n=>`<option${n===sel0?' selected':''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')+`<option value="__other"${sel0&&!known?' selected':''}>Other…</option>`};
+  const addX=x=>{const r=document.createElement('div');r.className='xedit';const n=x.n||'',known=EXALL.includes(n)||(S.customEx||[]).includes(n);
+    r.innerHTML=`<select aria-label="Exercise">${opts(n)}</select><input type="number" min="0" inputmode="numeric" placeholder="Sets" aria-label="Sets" value="${x.s??''}"><input type="number" min="0" inputmode="numeric" placeholder="Reps" aria-label="Reps" value="${x.r??''}"><button class="x" aria-label="Remove exercise">×</button><input type="text" class="oth" placeholder="Exercise name" aria-label="Exercise name" value="${known?'':esc(n)}"${n&&!known?'':' hidden'}>`;
+    const s=r.querySelector('select'),o2=r.querySelector('.oth');s.onchange=()=>{o2.hidden=s.value!=='__other';if(!o2.hidden)o2.focus()};
+    r.querySelector('.x').onclick=()=>r.remove();$('#xrows').appendChild(r)};
+  (o.ex||[]).forEach(addX);
+  $('#addX').onclick=()=>{addX({});const l=$('#xrows').lastElementChild;l&&l.querySelector('select').focus()};
+  $('#cn').onclick=()=>{editing=false;renderDay()};
+  const rs=$('#rs');if(rs)rs.onclick=()=>{const d=Object.assign({},o.auto,{auto:o.auto,workouts:(o.workouts||[]).filter(w=>w.hc)});if(o.note)d.note=o.note;if(o.ex)d.ex=o.ex;S.days[sel]=d;editing=false;save();render();hcSync()};
+  $('#sv').onclick=()=>{const d={},man=new Set(o.man||[]);
+    F.forEach(([f])=>{const v=$('#e_'+f).value;if(v!=='')d[f]=+v;if(d[f]!==o[f])man.add(f)});
+    d.workouts=[...document.querySelectorAll('#wrows .wedit')].map(r=>{const i=r.querySelectorAll('input');const x=JSON.parse(r.dataset.extra||'{}'),ov=x.o||[];delete x.o;
+      const w=Object.assign({},x,{name:i[0].value.trim()||'Workout',min:+i[1].value||0,cal:i[2].value===''?undefined:+i[2].value});
+      if(w.hc&&(w.name!==ov[0]||w.min!==ov[1]||(w.cal??null)!==ov[2]))delete w.hc;
+      if(!w.hc)delete w.hc;return w}).filter(w=>w.min>0);
+    const kept=d.workouts.filter(w=>w.hc).map(w=>w.hc);
+    const hide=new Set(o.hide||[]);(o.workouts||[]).forEach(w=>{if(w.hc&&!kept.includes(w.hc))hide.add(w.hc)});
+    if(o.auto){d.auto=o.auto;if(man.size)d.man=[...man];if(hide.size)d.hide=[...hide]}
+    const ex=[...document.querySelectorAll('#xrows .xedit')].map(r=>{const s=r.querySelector('select').value,i=r.querySelectorAll('input[type=number]');
+      const n=s==='__other'?r.querySelector('.oth').value.trim():s;return{n,s:i[0].value===''?undefined:+i[0].value,r:i[1].value===''?undefined:+i[1].value}}).filter(x=>x.n&&(x.s||x.r));
+    ex.forEach(x=>{if(!EXALL.includes(x.n)){S.customEx=S.customEx||[];if(!S.customEx.includes(x.n))S.customEx.push(x.n)}});
+    if(ex.length)d.ex=ex;
+    const nt=$('#e_note').value.trim();if(nt)d.note=nt;
+    if(has(d)||nt||d.auto)S.days[sel]=d;else delete S.days[sel];
+    editing=false;save();render()}}
+
+const toD=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const fd=k=>toD(k).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+function mstats(y,m,lim){const n=Math.min(new Date(y,m+1,0).getDate(),lim||99);let met=0,cnt=0,ss=0,sd=0,wo=0,sl=0,sn=0;
+  for(let d=1;d<=n;d++){const k=key(y,m,d);if(k>TODAY)break;const st=status(k),o=S.days[k]||{};
+    if(st==='met'||st==='miss'){cnt++;if(st==='met')met++}
+    if(o.steps!=null){ss+=o.steps;sd++}if(o.sleep!=null){sl+=o.sleep;sn++}wo+=(o.workouts||[]).length}
+  return{rate:cnt?met/cnt*100:null,met,cnt,steps:sd?ss/sd:null,wo,sleep:sn?sl/sn:null,any:sd||sn||wo||cnt}}
+function renderTrends(){const live=vy===now.getFullYear()&&vm===now.getMonth(),c=mstats(vy,vm),py=vm?vy:vy-1,pm=vm?vm-1:11,p=mstats(py,pm,live?now.getDate():0),pl=MON[pm].slice(0,3);
+  $('#trSub').textContent=live?`${MON[vm]} so far, compared with ${MON[pm]} 1 to ${now.getDate()}`:`${MON[vm]} compared with ${MON[pm]}`;
+  const dl=(a,b,f,unit)=>{if(a==null)return'<em>No data</em>';if(b==null||!p.any)return`<em>No ${pl} data</em>`;const d=a-b;if(Math.abs(d)<.5)return`<em>Same as ${pl}</em>`;return`<em class="${d>0?'up':'down'}">${d>0?'+':'−'}${f(Math.abs(d))}${unit} vs ${pl}</em>`};
+  $('#cmp').innerHTML=[
+    ['Days goal met',c.rate==null?'–':Math.round(c.rate)+'%',dl(c.rate,p.rate,v=>Math.round(v),' pts')],
+    ['Avg steps',c.steps==null?'–':fk(c.steps),dl(c.steps,p.steps,fk,'')],
+    ['Workouts',c.any?String(c.wo):'–',dl(c.any?c.wo:null,p.wo,v=>Math.round(v),'')],
+    ['Avg sleep',c.sleep==null?'–':hm(c.sleep),dl(c.sleep,p.sleep,hm,'')]
+  ].map(([l,v,d])=>`<div><span>${l}</span><b class="num">${v}</b>${d}</div>`).join('');
+  $('#cap').textContent=`Daily steps. Dashed line is your ${fn(S.goals.steps)}-step goal; bar colour shows whether the day's goal was met.`;
+  draw()}
+const svg=$('#chart');
+function draw(){const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+  const n=new Date(vy,vm+1,0).getDate(),g=S.goals.steps,v=[];for(let d=1;d<=n;d++){const k=key(vy,vm,d);v.push({d,k,s:(S.days[k]||{}).steps,st:status(k)})}
+  const mx=Math.max(g*1.25,...v.map(x=>x.s||0)),pt=8,pb=24,ch=H-pt-pb,bw=W/n,y=s=>pt+ch-s/mx*ch;
+  const col={met:'var(--acc)',miss:'var(--bad)',prog:'var(--wo)'};
+  const ticks=W<520?[1,10,20,n]:[1,5,10,15,20,25,n];
+  let h=v.map(x=>x.s==null?'':`<rect x="${(x.d-1)*bw+bw*.15}" y="${y(x.s)}" width="${Math.max(1,bw*.7)}" height="${Math.max(0,pt+ch-y(x.s))}" rx="2" fill="${col[x.st]||'var(--mute)'}"/>`).join('');
+  h+=`<line x1="0" x2="${W}" y1="${y(g)}" y2="${y(g)}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  h+=`<line x1="0" x2="${W}" y1="${pt+ch}" y2="${pt+ch}" stroke="var(--line)"/>`;
+  h+=ticks.map(d=>`<text x="${(d-.5)*bw}" y="${H-6}" text-anchor="middle" font-size="13" fill="var(--mute)">${d}</text>`).join('');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=h}
+new ResizeObserver(draw).observe(svg);
+function renderBests(){const ks=Object.keys(S.days).filter(k=>k<=TODAY).sort();let ms=null,az=null,lw=null,best={v:0,k:null};
+  for(const k of ks){const d=S.days[k];if(d.steps!=null&&(!ms||d.steps>ms.v))ms={v:d.steps,k};if(d.azm!=null&&(!az||d.azm>az.v))az={v:d.azm,k};
+    (d.workouts||[]).forEach(w=>{if(!lw||w.min>lw.v)lw={v:w.min,k,n:w.name}})}
+  if(ks.length){let cur=0;for(const d=toD(ks[0]);;d.setDate(d.getDate()+1)){const k=key(d.getFullYear(),d.getMonth(),d.getDate());if(k>TODAY)break;if(status(k)==='met'){cur++;if(cur>best.v)best={v:cur,k}}else cur=0}}
+  const T=[['Most steps in a day',ms&&fn(ms.v),ms&&fd(ms.k),ms&&ms.k],
+    ['Longest goal streak',best.v?best.v+(best.v===1?' day':' days'):null,best.k&&'Ended '+fd(best.k),best.k],
+    ['Longest workout',lw&&fn(lw.v)+' min',lw&&`${esc(lw.n)}, ${fd(lw.k)}`,lw&&lw.k],
+    ['Most Active Zone Minutes',az&&fn(az.v),az&&fd(az.k),az&&az.k]];
+  $('#pbs').innerHTML=T.map(([l,v,s,k])=>`<button class="pb" ${k?`data-k="${k}"`:'disabled'}><span>${l}</span><b class="num">${v||'–'}</b><small>${s||'No data yet'}</small></button>`).join('')}
+$('#pbs').onclick=e=>{const b=e.target.closest('.pb[data-k]');if(!b)return;sel=b.dataset.k;const[y,m]=sel.split('-').map(Number);vy=y;vm=m-1;editing=false;render();$('#day').scrollIntoView({block:'start'})};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- import ---------- */
+function toKey(s){s=String(s||'').trim().replace(/^"|"$/g,'');let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return`${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);if(m){let y=+m[3];if(y<100)y+=2000;return`${y}-${pad(+m[1])}-${pad(+m[2])}`}
+  const t=Date.parse(s);if(!isNaN(t)){const d=new Date(t);return key(d.getFullYear(),d.getMonth(),d.getDate())}return null}
+const num=v=>{const n=parseFloat(String(v??'').replace(/,/g,''));return isNaN(n)?null:n};
+function csv(t){const rows=[];let r=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];
+  if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+  else if(c==='"')q=true;else if(c===','){r.push(f);f=''}
+  else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;r.push(f);rows.push(r);r=[];f=''}else f+=c}
+  if(f||r.length){r.push(f);rows.push(r)}return rows.filter(x=>x.length>1||x[0])}
+
+let acc,wos,stats;
+const SUM=['steps','dist','cal','azm','floors'];
+function put(k,f,v){if(!k||v==null)return;const o=acc[k]||(acc[k]={});if(SUM.includes(f))o[f]=(o[f]||0)+v;else o[f]=v}
+function addW(k,w){if(k&&w.min>0)wos.push([k,w])}
+
+function handle(name,txt){const b=name.split('/').pop().toLowerCase();
+  if(b.endsWith('.json')){let o;try{o=JSON.parse(txt)}catch(e){stats.bad++;return}
+    if(o&&o.app==='actcal'){restore(o);stats.restored=1;return}
+    if(!Array.isArray(o)||!o.length){stats.bad++;return}
+    const s=o[0];
+    if('activityName' in s){o.forEach(e=>{let dist=num(e.distance);if(dist!=null&&/mile/i.test(e.distanceUnit||''))dist*=1.609;
+      addW(toKey(e.startTime),{name:e.activityName,min:Math.round((e.activeDuration||e.duration||0)/60000),cal:num(e.calories)??undefined,hr:num(e.averageHeartRate)??undefined,dist:dist??undefined,start:e.startTime})});stats.files++;return}
+    if('dateOfSleep' in s){const t={};o.forEach(e=>{const k=toKey(e.dateOfSleep);if(k)t[k]=(t[k]||0)+(+e.minutesAsleep||0)});Object.entries(t).forEach(([k,v])=>put(k,'sleep',v));stats.files++;return}
+    if('dateTime' in s){let f=null,conv=v=>num(v);
+      if(/^steps/.test(b))f='steps';else if(/^distance/.test(b)){f='dist';conv=v=>{const n=num(v);return n==null?null:n/100000}}
+      else if(/^calories/.test(b))f='cal';else if(/^resting_heart_rate/.test(b)){f='rhr';conv=v=>{const n=num(v&&typeof v==='object'?v.value:v);return n?Math.round(n):null}}
+      if(!f){stats.skip++;return}
+      o.forEach(e=>put(toKey(e.dateTime),f,conv(e.value)));stats.files++;return}
+    stats.skip++;return}
+  const rows=csv(txt);if(rows.length<2){stats.bad++;return}
+  let hi=rows.slice(0,6).findIndex(r=>r.some(c=>/date|time|day/i.test(c)));if(hi<0){stats.bad++;return}
+  const H=rows[hi].map(c=>c.trim().toLowerCase()),R=rows.slice(hi+1);
+  const di=H.findIndex(c=>/date|time|day/.test(c)&&!/zone|minute|asleep/.test(c));
+  const find=(re,no)=>H.findIndex(c=>re.test(c)&&!(no&&no.test(c)));
+  if(H.includes('heart_zone_id')||(find(/zone/)>=0&&find(/total_minutes|minutes/)>=0&&find(/step/)<0)){const mi=find(/total_minutes/)>=0?find(/total_minutes/):find(/minutes/);R.forEach(r=>put(toKey(r[di]),'azm',num(r[mi])));stats.files++;return}
+  const ai=find(/activity|exercise|workout/,/calor|minute|level|zone/),mi=find(/minute|duration/,/zone|sedentary|light|fair|very/);
+  if(ai>=0&&mi>=0){const ci=find(/calor/);R.forEach(r=>{let m=num(r[mi]);if(/duration/.test(H[mi])&&m>1000)m=m/60000;addW(toKey(r[di]),{name:r[ai]||'Workout',min:Math.round(m||0),cal:ci>=0?num(r[ci])??undefined:undefined})});stats.files++;return}
+  const col={steps:find(/step/),dist:find(/distance/),cal:find(/calor/,/activity/),azm:find(/azm|active zone/),rhr:find(/resting/),sleep:find(/sleep|asleep/,/awake|start|end/),floors:find(/floor/)};
+  if(Object.values(col).every(v=>v<0)){stats.skip++;return}
+  const dm=col.dist>=0?(/mile/.test(H[col.dist])?1.609:/meter|\(m\)/.test(H[col.dist])?.001:1):1;
+  const sm=col.sleep>=0&&/hour/.test(H[col.sleep])?60:1;
+  R.forEach(r=>{const k=toKey(r[di]);for(const[f,i]of Object.entries(col)){if(i<0)continue;let v=num(r[i]);if(v==null)continue;if(f==='dist')v*=dm;if(f==='sleep')v*=sm;put(k,f,v)}});
+  stats.files++}
+
+const wanted=n=>{const b=n.split('/').pop().toLowerCase();return/\.(json|csv)$/.test(b)&&(/^(steps|distance|calories|exercise|sleep|resting_heart_rate)-/.test(b)||/active zone minutes|azm/i.test(n))};
+
+async function importFiles(list){acc={};wos=[];stats={files:0,skip:0,bad:0,restored:0};const msg=$('#iMsg');msg.textContent='Reading…';
+  try{for(const f of list){
+    if(/\.zip$/i.test(f.name)){if(!window.JSZip){msg.textContent="Zip support didn't load. Unzip the export and pick the files instead.";return}
+      const z=await JSZip.loadAsync(f);const ents=[];z.forEach((p,e)=>{if(!e.dir&&wanted(p))ents.push([p,e])});
+      let i=0;for(const[p,e]of ents){i++;msg.textContent=`Reading ${i} of ${ents.length} files in the zip…`;handle(p,await e.async('string'))}}
+    else handle(f.name,await f.text())}}
+  catch(e){msg.textContent='Could not read that file. If it is a very large zip, unzip it and pick the individual files.';return}
+  if(stats.restored){msg.textContent='Backup restored.';render();return}
+  const ks=Object.keys(acc);if(!ks.length&&!wos.length){msg.textContent="No activity data found in those files.";return}
+  if(S.sample){S.days={};S.sample=false}
+  for(const k of ks){const d=S.days[k]||(S.days[k]={});for(const[f,v]of Object.entries(acc[k]))d[f]=f==='dist'?+v.toFixed(2):Math.round(v)}
+  let wn=0;for(const[k,w]of wos){const d=S.days[k]||(S.days[k]={});d.workouts=d.workouts||[];const sig=w.start||(w.name+w.min);
+    if(!d.workouts.some(x=>(x.start||(x.name+x.min))===sig)){d.workouts.push(w);wn++}}
+  save();const all=[...ks,...wos.map(w=>w[0])].sort();const last=all[all.length-1];
+  if(last){const[y,m]=last.split('-').map(Number);vy=y;vm=m-1;sel=last>TODAY?TODAY:last}
+  msg.textContent=`Imported ${ks.length} days and ${wn} workouts from ${stats.files} file${stats.files===1?'':'s'}.`+(stats.skip?` Skipped ${stats.skip} file${stats.skip===1?'':'s'} with nothing to use.`:'');
+  render()}
+
+function restore(o){S.days=o.days||{};if(o.customEx)S.customEx=o.customEx;if(o.goals)S.goals=Object.assign(S.goals,o.goals);S.sample=false;save()}
+
+/* ---------- wiring ---------- */
+const open=id=>{$(id).hidden=false;const f=$(id).querySelector('input,select,button');f&&f.focus()};
+const close=()=>document.querySelectorAll('.ov').forEach(o=>o.hidden=true);
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)close()}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+$('#grid').onclick=e=>{const c=e.target.closest('.cell[data-k]');if(!c)return;sel=c.dataset.k;editing=false;render();$('#day').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
+$('#prev').onclick=()=>{vm--;if(vm<0){vm=11;vy--}render()};
+$('#next').onclick=()=>{vm++;if(vm>11){vm=0;vy++}render()};
+$('#tToday').onclick=()=>{vy=now.getFullYear();vm=now.getMonth();sel=TODAY;editing=false;render()};
+$('#bGoals').onclick=()=>{const g=S.goals;$('#gSteps').value=g.steps;$('#gWmin').value=g.wmin;$('#gAzm').value=g.azm;$('#uSteps').checked=g.use.steps;$('#uWmin').checked=g.use.wmin;$('#uAzm').checked=g.use.azm;$('#gMode').value=g.mode;open('#ovGoals')};
+$('#gSave').onclick=()=>{S.goals={steps:+$('#gSteps').value||10000,wmin:+$('#gWmin').value||0,azm:+$('#gAzm').value||0,use:{steps:$('#uSteps').checked,wmin:$('#uWmin').checked,azm:$('#uAzm').checked},mode:$('#gMode').value};save();close();render()};
+const openImp=()=>{$('#iMsg').textContent='';$('#wipe').textContent='Delete all data';open('#ovImport')};
+$('#bImport').onclick=openImp;$('#bImport2').onclick=openImp;
+$('#clrSample').onclick=()=>{S.days={};S.sample=false;save();render()};
+$('#file').onchange=e=>{if(e.target.files.length)importFiles([...e.target.files]);e.target.value=''};
+const dz=$('#drop');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('on')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('on'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('on');if(e.dataTransfer.files.length)importFiles([...e.dataTransfer.files])});
+$('#copyB').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify({app:'actcal',v:1,goals:S.goals,days:S.days,customEx:S.customEx||[]}));$('#iMsg').textContent='Backup copied. Paste it somewhere safe, like a note or an email to yourself.'}catch(e){$('#paste').value=JSON.stringify({app:'actcal',v:1,goals:S.goals,days:S.days,customEx:S.customEx||[]});$('#iMsg').textContent="Couldn't copy automatically. The backup is in the box above; select it and copy."}};
+$('#restB').onclick=()=>{try{const o=JSON.parse($('#paste').value);if(o.app!=='actcal')throw 0;restore(o);$('#iMsg').textContent='Backup restored.';render()}catch(e){$('#iMsg').textContent="That doesn't look like a backup from this page."}};
+$('#wipe').onclick=e=>{const b=e.target;if(b.textContent!=='Tap again to delete'){b.textContent='Tap again to delete';return}S.days={};S.sample=false;save();b.textContent='Delete all data';$('#iMsg').textContent='All data deleted.';render()};
+
+/* ---------- Android app: Health Connect ---------- */
+const A=window.Android||null;let busy=false;
+const setSync=s=>{$('#syncSt').textContent=s};
+function updHc(){if(!A)return;$('#bSync').hidden=!S.hc;const bar=$('#hcBar');if(S.hc){bar.hidden=true;return}
+  const st=A.status();bar.hidden=false;
+  if(st==='available'){$('#hcTxt').textContent='Connect Health Connect to fill this calendar from your Fitbit automatically.';$('#hcBtn').textContent='Connect';$('#hcBtn').onclick=()=>A.connect()}
+  else if(st==='update'){$('#hcTxt').textContent='Health Connect needs an update before the app can read your data.';$('#hcBtn').textContent='Open Health Connect';$('#hcBtn').onclick=()=>A.openSettings()}
+  else{$('#hcTxt').textContent="Health Connect isn't available on this phone, so add data by hand or import an export.";$('#hcBtn').textContent='Import';$('#hcBtn').onclick=openImp}}
+function hcSync(){if(!A||!S.hc||busy)return;busy=true;setSync('Syncing…');try{A.sync(30)}catch(e){busy=false;setSync('Sync failed.')}}
+window.onHealthPermission=n=>{if(n>0){S.hc=true;save();updHc();hcSync()}else setSync('No permissions were granted. Tap Connect to try again.')};
+window.onAppResume=()=>{if(S.lastSync&&Date.now()-S.lastSync<60000)return;hcSync()};
+window.onHealthSync=s=>{busy=false;let r;try{r=JSON.parse(s)}catch(e){setSync('Sync failed.');return}
+  if(r.error){if(r.error==='permissions'){S.hc=false;save();updHc();setSync('Health Connect access is off. Tap Connect to turn it back on.')}else setSync('Sync failed: '+r.error);return}
+  if(S.sample){S.days={};S.sample=false}
+  for(const[k,a]of Object.entries(r.days||{})){const d=S.days[k]||(S.days[k]={});d.auto=a;const man=d.man||[];for(const f of Object.keys(a))if(!man.includes(f))d[f]=a[f]}
+  const by={};(r.workouts||[]).forEach(w=>{(by[w.date]=by[w.date]||[]).push(w)});
+  for(const d0=toD(r.from);;d0.setDate(d0.getDate()+1)){const k=key(d0.getFullYear(),d0.getMonth(),d0.getDate());if(k>r.to)break;
+    const ws=by[k]||[],ex=S.days[k];if(!ex&&!ws.length)continue;const d=ex||(S.days[k]={}),hide=d.hide||[];
+    d.workouts=(d.workouts||[]).filter(w=>!w.hc).concat(ws.filter(w=>!hide.includes(w.id)).map(w=>({name:w.name,min:w.min,cal:w.cal,hr:w.hr,start:w.start,hc:w.id})))}
+  S.lastSync=Date.now();save();render();
+  setSync('Synced at '+new Date().toLocaleTimeString('en-CA',{hour:'numeric',minute:'2-digit'}))};
+window.appBack=()=>{if([...document.querySelectorAll('.ov')].some(o=>!o.hidden)){close();return true}if(editing){editing=false;renderDay();return true}return false};
+$('#bSync').onclick=()=>{S.lastSync=0;hcSync()};
+
+/* ---------- Android app: updates ---------- */
+let upd=null,manual=false;
+window.onUpdateInfo=s=>{let r;try{r=JSON.parse(s)}catch(e){return}
+  if(r.error){if(manual)$('#verMsg').textContent="Couldn't check for updates. Check your internet connection and try again.";manual=false;return}
+  upd=r;
+  if(r.latest>r.current&&r.url){$('#updBar').hidden=false;$('#updTxt').textContent=`Version ${r.latest} of the app is ready to install.`;$('#verMsg').textContent=`Version ${r.latest} is available.`}
+  else if(manual)$('#verMsg').textContent="You're on the latest version.";
+  manual=false};
+window.onUpdateStatus=s=>{const m={downloading:'Downloading the update…',ready:'Tap Update on the next screen to finish.',permission:'Turn on "Allow from this source" for Activity Calendar, come back, then tap Update again.',error:"The update couldn't be downloaded. Try again in a moment."}[s];
+  if(m){$('#updBar').hidden=false;$('#updTxt').textContent=m}};
+$('#updBtn').onclick=()=>{if(A&&upd&&upd.url)A.installUpdate(upd.url)};
+$('#chkUpd').onclick=()=>{if(!A)return;manual=true;$('#verMsg').textContent='Checking…';A.checkUpdate()};
+
+load();render();
+if(A){updHc();hcSync();
+  if(typeof A.version==='function'){$('#verLine').hidden=false;$('#verTxt').textContent=`App version ${A.version()}.`;A.checkUpdate()}}
+}
+</script>
+</body>
+</html>
