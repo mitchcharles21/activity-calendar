@@ -14,9 +14,9 @@
    COLOUR and TYPE: Radix Colors — slate neutrals, grass = met, tomato = missed, indigo = today/workouts, amber = bests; Inter text, Barlow Condensed numbers.
    LAYOUT: app bar > today ring card > calendar card > day card; bottom tabs for Calendar, Trends, Bests, More. */
 /* Radix Colors 3 (MIT): slate, grass, tomato, indigo, amber, blue */
-:root{--s1:#fcfcfd;--s2:#f9f9fb;--s3:#f0f0f3;--s4:#e8e8ec;--s5:#e0e1e6;--s6:#d9d9e0;--s7:#cdced6;--s8:#b9bbc6;--s9:#8b8d98;--s10:#80838d;--s11:#60646c;--s12:#1c2024;--g1:#fbfefb;--g2:#f5fbf5;--g3:#e9f6e9;--g4:#daf1db;--g5:#c9e8ca;--g6:#b2ddb5;--g7:#94ce9a;--g8:#65ba74;--g9:#46a758;--g10:#3e9b4f;--g11:#2a7e3b;--g12:#203c25;--t1:#fffcfc;--t2:#fff8f7;--t3:#feebe7;--t4:#ffdcd3;--t5:#ffcdc2;--t6:#fdbdaf;--t7:#f5a898;--t8:#ec8e7b;--t9:#e54d2e;--t10:#dd4425;--t11:#d13415;--t12:#5c271f;--i1:#fdfdfe;--i2:#f7f9ff;--i3:#edf2fe;--i4:#e1e9ff;--i5:#d2deff;--i6:#c1d0ff;--i7:#abbdf9;--i8:#8da4ef;--i9:#3e63dd;--i10:#3358d4;--i11:#3a5bc7;--i12:#1f2d5c;--aa1:#fefdfb;--aa2:#fefbe9;--aa3:#fff7c2;--aa4:#ffee9c;--aa5:#fbe577;--aa6:#f3d673;--aa7:#e9c162;--aa8:#e2a336;--aa9:#ffc53d;--aa10:#ffba18;--aa11:#ab6400;--aa12:#4f3422;--b1:#fbfdff;--b2:#f4faff;--b3:#e6f4fe;--b4:#d5efff;--b5:#c2e5ff;--b6:#acd8fc;--b7:#8ec8f6;--b8:#5eb1ef;--b9:#0090ff;--b10:#0588f0;--b11:#0d74ce;--b12:#113264}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--s1:#111113;--s2:#18191b;--s3:#212225;--s4:#272a2d;--s5:#2e3135;--s6:#363a3f;--s7:#43484e;--s8:#5a6169;--s9:#696e77;--s10:#777b84;--s11:#b0b4ba;--s12:#edeef0;--g1:#0e1511;--g2:#141a15;--g3:#1b2a1e;--g4:#1d3a24;--g5:#25482d;--g6:#2d5736;--g7:#366740;--g8:#3e7949;--g9:#46a758;--g10:#53b365;--g11:#71d083;--g12:#c2f0c2;--t1:#181111;--t2:#1f1513;--t3:#391714;--t4:#4e1511;--t5:#5e1c16;--t6:#6e2920;--t7:#853a2d;--t8:#ac4d39;--t9:#e54d2e;--t10:#ec6142;--t11:#ff977d;--t12:#fbd3cb;--i1:#11131f;--i2:#141726;--i3:#182449;--i4:#1d2e62;--i5:#253974;--i6:#304384;--i7:#3a4f97;--i8:#435db1;--i9:#3e63dd;--i10:#5472e4;--i11:#9eb1ff;--i12:#d6e1ff;--aa1:#16120c;--aa2:#1d180f;--aa3:#302008;--aa4:#3f2700;--aa5:#4d3000;--aa6:#5c3d05;--aa7:#714f19;--aa8:#8f6424;--aa9:#ffc53d;--aa10:#ffd60a;--aa11:#ffca16;--aa12:#ffe7b3;--b1:#0d1520;--b2:#111927;--b3:#0d2847;--b4:#003362;--b5:#004074;--b6:#104d87;--b7:#205d9e;--b8:#2870bd;--b9:#0090ff;--b10:#3b9eff;--b11:#70b8ff;--b12:#c2e6ff}}
-:root[data-theme=dark]{--s1:#111113;--s2:#18191b;--s3:#212225;--s4:#272a2d;--s5:#2e3135;--s6:#363a3f;--s7:#43484e;--s8:#5a6169;--s9:#696e77;--s10:#777b84;--s11:#b0b4ba;--s12:#edeef0;--g1:#0e1511;--g2:#141a15;--g3:#1b2a1e;--g4:#1d3a24;--g5:#25482d;--g6:#2d5736;--g7:#366740;--g8:#3e7949;--g9:#46a758;--g10:#53b365;--g11:#71d083;--g12:#c2f0c2;--t1:#181111;--t2:#1f1513;--t3:#391714;--t4:#4e1511;--t5:#5e1c16;--t6:#6e2920;--t7:#853a2d;--t8:#ac4d39;--t9:#e54d2e;--t10:#ec6142;--t11:#ff977d;--t12:#fbd3cb;--i1:#11131f;--i2:#141726;--i3:#182449;--i4:#1d2e62;--i5:#253974;--i6:#304384;--i7:#3a4f97;--i8:#435db1;--i9:#3e63dd;--i10:#5472e4;--i11:#9eb1ff;--i12:#d6e1ff;--aa1:#16120c;--aa2:#1d180f;--aa3:#302008;--aa4:#3f2700;--aa5:#4d3000;--aa6:#5c3d05;--aa7:#714f19;--aa8:#8f6424;--aa9:#ffc53d;--aa10:#ffd60a;--aa11:#ffca16;--aa12:#ffe7b3;--b1:#0d1520;--b2:#111927;--b3:#0d2847;--b4:#003362;--b5:#004074;--b6:#104d87;--b7:#205d9e;--b8:#2870bd;--b9:#0090ff;--b10:#3b9eff;--b11:#70b8ff;--b12:#c2e6ff}
+:root{--s1:#fcfcfd;--s2:#f9f9fb;--s3:#f0f0f3;--s4:#e8e8ec;--s5:#e0e1e6;--s6:#d9d9e0;--s7:#cdced6;--s8:#b9bbc6;--s9:#8b8d98;--s10:#80838d;--s11:#60646c;--s12:#1c2024;--g1:#fbfefb;--g2:#f5fbf5;--g3:#e9f6e9;--g4:#daf1db;--g5:#c9e8ca;--g6:#b2ddb5;--g7:#94ce9a;--g8:#65ba74;--g9:#46a758;--g10:#3e9b4f;--g11:#2a7e3b;--g12:#203c25;--t1:#fffcfc;--t2:#fff8f7;--t3:#feebe7;--t4:#ffdcd3;--t5:#ffcdc2;--t6:#fdbdaf;--t7:#f5a898;--t8:#ec8e7b;--t9:#e54d2e;--t10:#dd4425;--t11:#d13415;--t12:#5c271f;--i1:#fdfdfe;--i2:#f7f9ff;--i3:#edf2fe;--i4:#e1e9ff;--i5:#d2deff;--i6:#c1d0ff;--i7:#abbdf9;--i8:#8da4ef;--i9:#3e63dd;--i10:#3358d4;--i11:#3a5bc7;--i12:#1f2d5c;--a1:#fefdfb;--a2:#fefbe9;--a3:#fff7c2;--a4:#ffee9c;--a5:#fbe577;--a6:#f3d673;--a7:#e9c162;--a8:#e2a336;--a9:#ffc53d;--a10:#ffba18;--a11:#ab6400;--a12:#4f3422;--b1:#fbfdff;--b2:#f4faff;--b3:#e6f4fe;--b4:#d5efff;--b5:#c2e5ff;--b6:#acd8fc;--b7:#8ec8f6;--b8:#5eb1ef;--b9:#0090ff;--b10:#0588f0;--b11:#0d74ce;--b12:#113264}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--s1:#111113;--s2:#18191b;--s3:#212225;--s4:#272a2d;--s5:#2e3135;--s6:#363a3f;--s7:#43484e;--s8:#5a6169;--s9:#696e77;--s10:#777b84;--s11:#b0b4ba;--s12:#edeef0;--g1:#0e1511;--g2:#141a15;--g3:#1b2a1e;--g4:#1d3a24;--g5:#25482d;--g6:#2d5736;--g7:#366740;--g8:#3e7949;--g9:#46a758;--g10:#53b365;--g11:#71d083;--g12:#c2f0c2;--t1:#181111;--t2:#1f1513;--t3:#391714;--t4:#4e1511;--t5:#5e1c16;--t6:#6e2920;--t7:#853a2d;--t8:#ac4d39;--t9:#e54d2e;--t10:#ec6142;--t11:#ff977d;--t12:#fbd3cb;--i1:#11131f;--i2:#141726;--i3:#182449;--i4:#1d2e62;--i5:#253974;--i6:#304384;--i7:#3a4f97;--i8:#435db1;--i9:#3e63dd;--i10:#5472e4;--i11:#9eb1ff;--i12:#d6e1ff;--a1:#16120c;--a2:#1d180f;--a3:#302008;--a4:#3f2700;--a5:#4d3000;--a6:#5c3d05;--a7:#714f19;--a8:#8f6424;--a9:#ffc53d;--a10:#ffd60a;--a11:#ffca16;--a12:#ffe7b3;--b1:#0d1520;--b2:#111927;--b3:#0d2847;--b4:#003362;--b5:#004074;--b6:#104d87;--b7:#205d9e;--b8:#2870bd;--b9:#0090ff;--b10:#3b9eff;--b11:#70b8ff;--b12:#c2e6ff}}
+:root[data-theme=dark]{--s1:#111113;--s2:#18191b;--s3:#212225;--s4:#272a2d;--s5:#2e3135;--s6:#363a3f;--s7:#43484e;--s8:#5a6169;--s9:#696e77;--s10:#777b84;--s11:#b0b4ba;--s12:#edeef0;--g1:#0e1511;--g2:#141a15;--g3:#1b2a1e;--g4:#1d3a24;--g5:#25482d;--g6:#2d5736;--g7:#366740;--g8:#3e7949;--g9:#46a758;--g10:#53b365;--g11:#71d083;--g12:#c2f0c2;--t1:#181111;--t2:#1f1513;--t3:#391714;--t4:#4e1511;--t5:#5e1c16;--t6:#6e2920;--t7:#853a2d;--t8:#ac4d39;--t9:#e54d2e;--t10:#ec6142;--t11:#ff977d;--t12:#fbd3cb;--i1:#11131f;--i2:#141726;--i3:#182449;--i4:#1d2e62;--i5:#253974;--i6:#304384;--i7:#3a4f97;--i8:#435db1;--i9:#3e63dd;--i10:#5472e4;--i11:#9eb1ff;--i12:#d6e1ff;--a1:#16120c;--a2:#1d180f;--a3:#302008;--a4:#3f2700;--a5:#4d3000;--a6:#5c3d05;--a7:#714f19;--a8:#8f6424;--a9:#ffc53d;--a10:#ffd60a;--a11:#ffca16;--a12:#ffe7b3;--b1:#0d1520;--b2:#111927;--b3:#0d2847;--b4:#003362;--b5:#004074;--b6:#104d87;--b7:#205d9e;--b8:#2870bd;--b9:#0090ff;--b10:#3b9eff;--b11:#70b8ff;--b12:#c2e6ff}
 :root{color-scheme:light dark;--bg:var(--s2);--panel:#fff;--tile:var(--s2);--ink:var(--s12);--mute:var(--s11);--line:var(--s5);--trk:var(--s4);
   --acc:var(--g9);--accT:var(--g11);--met:var(--g3);--bad:var(--t9);--badT:var(--t11);--miss:var(--t3);--wo:var(--i9);--woT:var(--i11);--woB:var(--i3);--card:var(--s3);--r:16px;--sh:0 1px 2px rgba(0,0,0,.05),0 2px 12px rgba(0,0,0,.05)}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:var(--s1);--panel:var(--s2);--tile:var(--s3);--sh:none}}
@@ -29,7 +29,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--wo);outline-offset:2px}
 .num{font-family:"Barlow Condensed",Inter,sans-serif;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.2px}
-.i{display:inline-grid;place-items:center;flex:none}.i svg{width:18px;height:18px}
+.i{display:inline-grid;place-items:center;flex:none;line-height:0}.i svg{width:18px;height:18px}
 .wrap{max-width:760px;margin:0 auto}
 .app{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);padding:10px max(4vw,14px)}
 .bar{display:flex;align-items:center;gap:6px}
@@ -52,7 +52,8 @@ main{padding:0 max(4vw,12px) 104px}
 .big .p{fill:none;stroke:var(--wo);stroke-width:11;stroke-linecap:round;transition:stroke-dasharray .8s cubic-bezier(.2,.8,.2,1)}
 .hero.met .big .p{stroke:var(--acc)}
 .big .c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
-.big .c b{font-size:34px;line-height:1}.big .c small{font-size:12px;color:var(--mute)}
+.big .c b{font-size:30px;line-height:1}.big .c b.l{font-size:24px}.big .c b.xl{font-size:20px}
+.big .c{padding:0 16px}.big .c small{font-size:12px;color:var(--mute)}
 .hero h2{font:600 14px/1.2 Inter;color:var(--mute);margin:0 0 4px}
 .hero .hs{font:700 22px/1.15 Inter;letter-spacing:-.3px;margin:0 0 10px}
 .hero.met .hs{color:var(--accT)}
@@ -74,7 +75,7 @@ main{padding:0 max(4vw,12px) 104px}
 .score div{background:var(--tile);border-radius:12px;padding:8px 10px;display:grid;gap:2px}
 .score .i{color:var(--mute);justify-self:start}.score .i svg{width:15px;height:15px}
 .score b{font-size:24px;line-height:1}
-.score span{font-size:12px;color:var(--mute);line-height:1.2}
+.score span:not(.i){font-size:12px;color:var(--mute);line-height:1.2}
 .wd,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 .wd div{text-align:center;font-size:12px;color:var(--mute);font-weight:600;padding:2px 0 4px}
 .cell{position:relative;border:0;border-radius:12px;background:var(--tile);aspect-ratio:.8;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;transition:transform .12s}
@@ -112,8 +113,8 @@ main{padding:0 max(4vw,12px) 104px}
 .mets{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
 .mt{background:var(--tile);border-radius:14px;padding:10px 12px;display:flex;gap:10px;align-items:center}
 .mt .i{width:34px;height:34px;border-radius:10px}
-.mt span{display:block;font-size:12px;color:var(--mute);line-height:1.3}
-.mt b{font-size:24px;line-height:1.1}
+.mt span:not(.i){display:block;font-size:12px;color:var(--mute);line-height:1.3}
+.mt b{font-size:24px;line-height:1.1;white-space:nowrap}
 .mt small{font-size:13px;color:var(--mute);margin-left:3px;font-family:Inter;font-weight:500}
 .tg{background:var(--g4);color:var(--g11)}.tt{background:var(--t4);color:var(--t11)}.ti{background:var(--i4);color:var(--i11)}.ta{background:var(--a4);color:var(--a11)}.tb2{background:var(--b4);color:var(--b11)}.ts{background:var(--s4);color:var(--s11)}
 h3{font-size:15px;font-weight:700;margin:20px 0 8px}
@@ -121,7 +122,7 @@ h3{font-size:15px;font-weight:700;margin:20px 0 8px}
 .wl li{display:flex;gap:10px;align-items:center;background:var(--tile);border-radius:12px;padding:8px 12px 8px 8px;flex-wrap:wrap}
 .wl li .i{width:30px;height:30px;border-radius:9px}
 .wl li b{margin-right:auto;font-weight:600}
-.wl li span{font-size:13px;color:var(--mute);white-space:nowrap}
+.wl li span:not(.i){font-size:13px;color:var(--mute);white-space:nowrap}
 .empty{color:var(--mute);font-size:14px}
 .btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;border-radius:12px;border:0;background:var(--tile);padding:0 16px;font-weight:600}
 .btn .i svg{width:16px;height:16px}
@@ -167,15 +168,15 @@ ol.steps{padding-left:20px;margin:6px 0 12px;font-size:14px}
 .pbs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .pb{text-align:left;border:0;background:var(--panel);box-shadow:var(--sh);border-radius:var(--r);padding:14px;min-height:44px;display:grid;gap:4px}
 .pb .i{width:36px;height:36px;border-radius:11px;background:var(--a4);color:var(--a11);margin-bottom:4px}
-.pb span{font-size:12px;color:var(--mute);font-weight:600}.pb b{font-size:32px;line-height:1}.pb small{font-size:13px;color:var(--mute)}
+.pb span:not(.i){font-size:12px;color:var(--mute);font-weight:600}.pb b{font-size:32px;line-height:1}.pb small{font-size:13px;color:var(--mute)}
 .pb:disabled{cursor:default}.pb:disabled .i{background:var(--tile);color:var(--s9)}
 /* more */
 .list{display:grid;padding:6px}
 .li{display:flex;align-items:center;gap:12px;border:0;background:none;text-align:left;padding:10px;border-radius:12px;min-height:56px;width:100%}
 .li:hover{background:var(--tile)}
 .li .i{width:36px;height:36px;border-radius:11px}
-.li b{display:block;font-weight:600}.li span{display:block;font-size:13px;color:var(--mute)}
-.li .chev{margin-left:auto;color:var(--s9)}
+.li b{display:block;font-weight:600}.li span:not(.i):not(.chev){display:block;font-size:13px;color:var(--mute)}
+.li .chev{margin-left:auto;color:var(--s9);display:grid;place-items:center}
 #verLine{padding:12px 16px}
 /* tabs */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
@@ -184,7 +185,7 @@ ol.steps{padding-left:20px;margin:6px 0 12px;font-size:14px}
 .tabs button[aria-current=page]{color:var(--ink)}
 .tabs button[aria-current=page] .i{background:var(--woB);color:var(--woT)}
 @media(max-width:600px){.g{grid-template-columns:104px minmax(0,1fr) auto}.score b{font-size:21px}}
-@media(max-width:400px){.hero{gap:12px}.big{width:112px;height:112px}.big .c b{font-size:28px}.wd,.grid{gap:3px}.cell{border-radius:9px}.score{gap:4px}.score div{padding:7px}}
+@media(max-width:400px){.hero{gap:12px}.big{width:112px;height:112px}.big .c b{font-size:25px}.big .c b.l{font-size:20px}.big .c b.xl{font-size:17px}.mt b{font-size:21px}.mt{padding:10px}.mt .i{width:30px;height:30px}.wd,.grid{gap:3px}.cell{border-radius:9px}.score{gap:4px}.score div{padding:7px}}
 @media(min-width:700px){.cmp{grid-template-columns:repeat(4,minmax(0,1fr))}.pbs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.prg,.big .p{transition:none}.sheet{animation:none}}
 </style>
@@ -429,7 +430,7 @@ function renderHero(){const o=S.days[TODAY]||{},g=S.goals,st=status(TODAY),s=o.s
   if(o.rhr!=null)ch.push([false,'Heart',`${o.rhr} bpm`]);
   const sk=streak();if(sk)ch.push([false,'DoubleArrowUp',`${sk}-day streak`]);
   const h=$('#hero');h.className='card hero'+(st==='met'?' met':'');
-  h.innerHTML=`<div class="big"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="t" cx="60" cy="60" r="52"/><circle class="p" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="${p} 100"/></svg><div class="c"><b class="num">${fn(s)}</b><small>of ${fk(g.steps)} steps</small></div></div>
+  h.innerHTML=`<div class="big"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="t" cx="60" cy="60" r="52"/><circle class="p" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="${p} 100"/></svg><div class="c"><b class="num${fn(s).length>=7?' xl':fn(s).length>=6?' l':''}">${fn(s)}</b><small>of ${fk(g.steps)} steps</small></div></div>
     <div><h2>${greet()}</h2><p class="hs">${head}</p><p class="coach">${esc(coachToday(o,st))}</p><div class="chips">${ch.map(([ok,i,t])=>`<span class="chip${ok?' ok':''}">${ic(ok?'CheckCircled':i)}${t}</span>`).join('')}</div></div>`}
 
 function renderDay(){
