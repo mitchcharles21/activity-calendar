@@ -38,6 +38,8 @@ import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
+import androidx.health.connect.client.records.WeightRecord
+import java.net.URLEncoder
 import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
@@ -69,6 +71,7 @@ class MainActivity : ComponentActivity() {
         HeartRateRecord::class,
         SleepSessionRecord::class,
         ExerciseSessionRecord::class,
+        WeightRecord::class,
     )
     private val permissions: Set<String> = types.map { HealthPermission.getReadPermission(it) }.toSet()
 
@@ -199,6 +202,15 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface
         fun version(): Int = currentVersion()
 
+        // Food search through Open Food Facts (free, open food database).
+        @JavascriptInterface
+        fun foodSearch(query: String) {
+            lifecycleScope.launch {
+                val out = try { withContext(Dispatchers.IO) { searchFood(query.take(80)) } } catch (e: Exception) { error(e.message ?: "no connection") }
+                js("window.onFoodResults&&onFoodResults(${JSONObject.quote(out)})")
+            }
+        }
+
         @JavascriptInterface
         fun checkUpdate() {
             lifecycleScope.launch {
@@ -272,6 +284,22 @@ class MainActivity : ComponentActivity() {
                 if (a.optString("name").endsWith(".apk")) url = a.optString("browser_download_url")
             }
             return JSONObject().put("current", currentVersion()).put("latest", latest).put("url", url).toString()
+        } finally {
+            c.disconnect()
+        }
+    }
+
+    private fun searchFood(q: String): String {
+        val url = "https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=24" +
+            "&sort_by=unique_scans_n&fields=product_name,brands,nutriments,serving_size,serving_quantity" +
+            "&search_terms=" + URLEncoder.encode(q, "UTF-8")
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.setRequestProperty("User-Agent", "ActivityCalendar/1.0 (personal Android app)")
+        c.connectTimeout = 15000
+        c.readTimeout = 20000
+        try {
+            if (c.responseCode != 200) return error("search returned ${c.responseCode}")
+            return c.inputStream.bufferedReader().readText()
         } finally {
             c.disconnect()
         }
@@ -364,6 +392,15 @@ class MainActivity : ComponentActivity() {
             totals.forEach { (k, v) -> day(k).put("sleep", v) }
         }
 
+        // Weight: keep the last reading of each day, in kilograms.
+        val weights = JSONObject()
+        if (has(WeightRecord::class)) {
+            val wStart = start.atZone(zone).toInstant()
+            for (w in readAll(c, WeightRecord::class, wStart, end.atZone(zone).toInstant()).sortedBy { it.time }) {
+                weights.put(w.time.atZone(zone).toLocalDate().toString(), (w.weight.inKilograms * 100).roundToLong() / 100.0)
+            }
+        }
+
         val workouts = JSONArray()
         if (has(ExerciseSessionRecord::class)) {
             for (e in readAll(c, ExerciseSessionRecord::class, start.atZone(zone).toInstant(), end.atZone(zone).toInstant())) {
@@ -395,6 +432,8 @@ class MainActivity : ComponentActivity() {
             .put("days", JSONObject(dayMap.toMap()))
             .put("workouts", workouts)
             .put("granted", granted.size)
+            .put("weights", weights)
+            .put("missing", permissions.count { it !in granted })
             .toString()
     }
 
