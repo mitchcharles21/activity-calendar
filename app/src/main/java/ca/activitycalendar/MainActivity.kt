@@ -60,6 +60,9 @@ import kotlin.reflect.KClass
 class MainActivity : ComponentActivity() {
 
     private lateinit var web: WebView
+
+    // Hide the phone's navigation bar while the app is open; swipe up from the bottom shows it briefly.
+    private var hideNavBar = true
     private var client: HealthConnectClient? = null
 
     private val types: List<KClass<out Record>> = listOf(
@@ -160,6 +163,8 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        applyNavBar()
+
         // Back closes an open panel or edit form first, then leaves the app.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -174,6 +179,22 @@ class MainActivity : ComponentActivity() {
         })
 
         web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+    }
+
+    private fun applyNavBar() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val c = window.insetsController ?: return
+        if (hideNavBar) {
+            c.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            c.hide(WindowInsets.Type.navigationBars())
+        } else {
+            c.show(WindowInsets.Type.navigationBars())
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyNavBar()
     }
 
     override fun onResume() {
@@ -201,6 +222,12 @@ class MainActivity : ComponentActivity() {
 
         @JavascriptInterface
         fun version(): Int = currentVersion()
+
+        @JavascriptInterface
+        fun setHideNavBar(hide: Boolean) = runOnUiThread {
+            hideNavBar = hide
+            applyNavBar()
+        }
 
         // Food search through Open Food Facts (free, open food database).
         @JavascriptInterface

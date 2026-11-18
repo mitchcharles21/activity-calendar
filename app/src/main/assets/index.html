@@ -175,7 +175,10 @@ ol.steps{padding-left:20px;margin:6px 0 12px;font-size:14px}
 .li{display:flex;align-items:center;gap:12px;border:0;background:none;text-align:left;padding:10px;border-radius:12px;min-height:56px;width:100%}
 .li:hover{background:var(--tile)}
 .li .i{width:36px;height:36px;border-radius:11px}
-.li b{display:block;font-weight:600}.li span:not(.i):not(.chev){display:block;font-size:13px;color:var(--mute)}
+.li b{display:block;font-weight:600;font-size:16px;color:var(--ink);line-height:1.35}.li span:not(.i):not(.chev){display:block;font-size:13px;color:var(--mute)}
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:46px;height:28px;border-radius:14px;background:var(--s6);position:relative;transition:background .2s;cursor:pointer;margin:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.sw:checked{background:var(--wo)}.sw:checked::after{transform:translateX(18px)}
 .li .chev{margin-left:auto;color:var(--s9);display:grid;place-items:center}
 #verLine{padding:12px 16px}
 /* tabs */
@@ -298,6 +301,7 @@ ol.steps{padding-left:20px;margin:6px 0 12px;font-size:14px}
     <button class="li" id="bGoals2"><span class="i ti" data-i="Target"></span><span><b>Daily goals</b><span>Steps, workout minutes, Active Zone Minutes</span></span><span class="chev" data-i="ChevronRight"></span></button>
     <button class="li" id="bImport"><span class="i tg" data-i="Upload"></span><span><b>Import Fitbit data</b><span>From a Google Takeout export or CSV</span></span><span class="chev" data-i="ChevronRight"></span></button>
     <div class="li" style="cursor:default"><span class="i tt" data-i="Heart"></span><label style="flex:1"><b>Your name</b><span>So the app can cheer you on</span><input type="text" id="nm" autocomplete="given-name" maxlength="30" placeholder="First name" style="margin-top:6px"></label></div>
+    <label class="li" id="navRow" hidden><span class="i ts" data-i="MixerHorizontal"></span><span style="flex:1"><b>Hide phone buttons</b><span>Swipe up from the bottom edge to show Back and Home for a moment</span></span><input type="checkbox" id="navHide" class="sw" aria-label="Hide phone buttons"></label>
     <button class="li" id="bBackup"><span class="i ta" data-i="Archive"></span><span><b>Backup and restore</b><span>Copy your data or move it to another phone</span></span><span class="chev" data-i="ChevronRight"></span></button>
   </div>
   <div class="card" id="verLine" hidden>
@@ -396,7 +400,7 @@ let vy=now.getFullYear(),vm=now.getMonth(),sel=TODAY,editing=false;
 
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function load(){let t=null;try{t=localStorage.getItem(LS)}catch(e){}
-  if(t){try{const o=JSON.parse(t);if(o&&o.days){S.days=o.days;S.food=o.food||{};S.wt=o.wt||{};S.recent=o.recent||[];S.favs=o.favs||[];S.goalWt=o.goalWt||null;S.wu=o.wu==='kg'?'kg':'lb';S.wtAsk=o.wtAsk!==false;S.name=o.name||'';S.cel=o.cel||'';S.sample=!!o.sample;S.hc=!!o.hc;S.lastSync=o.lastSync||0;S.customEx=o.customEx||[];if(o.goals)S.goals=Object.assign(S.goals,o.goals)}}catch(e){seed()}}else seed()}
+  if(t){try{const o=JSON.parse(t);if(o&&o.days){S.days=o.days;S.food=o.food||{};S.wt=o.wt||{};S.recent=o.recent||[];S.favs=o.favs||[];S.goalWt=o.goalWt||null;S.wu=o.wu==='kg'?'kg':'lb';S.navHide=o.navHide!==false;S.wtAsk=o.wtAsk!==false;S.name=o.name||'';S.cel=o.cel||'';S.sample=!!o.sample;S.hc=!!o.hc;S.lastSync=o.lastSync||0;S.customEx=o.customEx||[];if(o.goals)S.goals=Object.assign(S.goals,o.goals)}}catch(e){seed()}}else seed()}
 function seed(){let a=20261115;const r=()=>{a=(a*1664525+1013904223)%4294967296;return a/4294967296};
   const names=['Run','Walk','Weights','Bike','Yoga','Elliptical'];S.days={};
   for(let i=45;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const k=key(d.getFullYear(),d.getMonth(),d.getDate());
@@ -874,6 +878,8 @@ $('#updBtn').onclick=()=>{if(A&&upd&&upd.url)A.installUpdate(upd.url)};
 $('#chkUpd').onclick=()=>{if(!A)return;manual=true;$('#verMsg').textContent='Checking…';A.checkUpdate()};
 
 load();render();
+if(A&&typeof A.setHideNavBar==='function'){$('#navRow').hidden=false;$('#navHide').checked=S.navHide!==false;A.setHideNavBar(S.navHide!==false);
+  $('#navHide').onchange=()=>{S.navHide=$('#navHide').checked;save();A.setHideNavBar(S.navHide)}}
 if(A){updHc();hcSync();
   if(typeof A.version==='function'){$('#verLine').hidden=false;$('#verTxt').textContent=`App version ${A.version()}.`;A.checkUpdate()}}
 }
